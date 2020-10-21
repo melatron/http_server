@@ -5,7 +5,7 @@ pub struct QueryString<'buf> {
     data: HashMap<&'buf str, Value<'buf>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Value<'buf> {
     Single(&'buf str),
     Multiple(Vec<&'buf str>),
@@ -41,5 +41,31 @@ impl<'buf> From<&'buf str> for QueryString<'buf> {
         }
 
         QueryString { data }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn from_single() {
+        let path = "a=1&b=2&c&d=&e===&d=7&d=abc";
+        let query_string = Some(QueryString::from(path));
+        let map = query_string.unwrap().data;
+        assert_eq!(map.get(&"a").unwrap(), &Value::Single("1"));
+        assert_eq!(map.get(&"c").unwrap(), &Value::Single(""));
+        assert_eq!(map.get(&"b").unwrap(), &Value::Single("2"));
+        assert_eq!(map.get(&"e").unwrap(), &Value::Single("=="));
+
+    }
+
+    #[test]
+    fn from_multiple() {
+        let path = "a=1&b=2&c&d=&e===&d=7&d=abc";
+        let query_string = Some(QueryString::from(path));
+        let map = query_string.unwrap().data;
+        let vector = vec!["", "7", "abc"];
+        assert_eq!(map.get(&"d").unwrap(), &Value::Multiple(vector));
     }
 }
